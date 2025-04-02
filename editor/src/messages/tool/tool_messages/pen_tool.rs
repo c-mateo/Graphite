@@ -96,6 +96,7 @@ enum PenToolFsmState {
 	Ready,
 	DraggingHandle(HandleMode),
 	PlacingAnchor,
+	// ?? Rotate Scale?
 	GRSHandle,
 }
 
@@ -325,6 +326,7 @@ impl PenToolData {
 		self.latest_points.get_mut(self.point_index)
 	}
 
+	// Relevant
 	fn add_point(&mut self, point: LastPoint) {
 		self.point_index = (self.point_index + 1).min(self.latest_points.len());
 		self.latest_points.truncate(self.point_index);
@@ -354,6 +356,7 @@ impl PenToolData {
 		}
 	}
 
+	// Relevant
 	/// If the user places the anchor on top of the previous anchor, it becomes sharp and the outgoing handle may be dragged.
 	fn bend_from_previous_point(&mut self, snap_data: SnapData, transform: DAffine2, layer: LayerNodeIdentifier, preferences: &PreferencesMessageHandler) {
 		self.g1_continuous = true;
@@ -387,6 +390,7 @@ impl PenToolData {
 		}
 	}
 
+	// Relevant for areas
 	fn finish_placing_handle(&mut self, snap_data: SnapData, transform: DAffine2, preferences: &PreferencesMessageHandler, responses: &mut VecDeque<Message>) -> Option<PenToolFsmState> {
 		let document = snap_data.document;
 		let next_handle_start = self.next_handle_start;
@@ -600,6 +604,7 @@ impl PenToolData {
 		}
 	}
 
+	// Relevant
 	fn drag_handle(
 		&mut self,
 		snap_data: SnapData,
@@ -762,6 +767,7 @@ impl PenToolData {
 		}
 	}
 
+	// Relevant
 	fn place_anchor(&mut self, snap_data: SnapData, transform: DAffine2, mouse: DVec2, preferences: &PreferencesMessageHandler, responses: &mut VecDeque<Message>) -> Option<PenToolFsmState> {
 		let document = snap_data.document;
 
@@ -859,6 +865,7 @@ impl PenToolData {
 		transform.inverse().transform_point2(document_pos)
 	}
 
+	// Relevant
 	fn create_initial_point(
 		&mut self,
 		document: &DocumentMessageHandler,
@@ -929,6 +936,7 @@ impl PenToolData {
 		responses.add(PenToolMessage::AddPointLayerPosition { layer, viewport });
 	}
 
+	// Relevant
 	/// Perform extension of an existing path
 	fn extend_existing_path(&mut self, document: &DocumentMessageHandler, layer: LayerNodeIdentifier, point: PointId, position: DVec2, responses: &mut VecDeque<Message>) {
 		let vector_data = document.network_interface.compute_modified_vector(layer);
@@ -1055,6 +1063,7 @@ impl PenToolData {
 		}
 	}
 
+	// Relevant
 	fn add_point_layer_position(&mut self, document: &DocumentMessageHandler, responses: &mut VecDeque<Message>, layer: LayerNodeIdentifier, viewport: DVec2) {
 		// Add the first point
 		let id = PointId::generate();
@@ -1105,6 +1114,7 @@ impl Fsm for PenToolFsmState {
 		let ToolMessage::Pen(event) = event else { return self };
 		match (self, event) {
 			(PenToolFsmState::PlacingAnchor | PenToolFsmState::GRSHandle, PenToolMessage::GRS { grab, rotate, scale }) => {
+				// Maybe relevant
 				let Some(layer) = layer else { return PenToolFsmState::PlacingAnchor };
 
 				let Some(latest) = tool_data.latest_point() else { return PenToolFsmState::PlacingAnchor };
@@ -1545,17 +1555,11 @@ impl Fsm for PenToolFsmState {
 				responses.add(OverlaysMessage::Draw);
 				self
 			}
-			(PenToolFsmState::DraggingHandle(mode), PenToolMessage::PointerOutsideViewport { .. }) => {
+			(PenToolFsmState::DraggingHandle(mode) | PenToolFsmState::PlacingAnchor, PenToolMessage::PointerOutsideViewport { .. }) => {
 				// Auto-panning
 				let _ = tool_data.auto_panning.shift_viewport(input, responses);
 
-				PenToolFsmState::DraggingHandle(mode)
-			}
-			(PenToolFsmState::PlacingAnchor, PenToolMessage::PointerOutsideViewport { .. }) => {
-				// Auto-panning
-				let _ = tool_data.auto_panning.shift_viewport(input, responses);
-
-				PenToolFsmState::PlacingAnchor
+				self
 			}
 			(
 				state,

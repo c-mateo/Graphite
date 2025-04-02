@@ -18,6 +18,7 @@ use graphene_core::{Artboard, Color};
 #[derive(PartialEq, Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum GraphOperationMessage {
 	FillSet {
+		// investigate
 		layer: LayerNodeIdentifier,
 		fill: Fill,
 	},
@@ -30,6 +31,7 @@ pub enum GraphOperationMessage {
 		blend_mode: BlendMode,
 	},
 	StrokeSet {
+		// investigate
 		layer: LayerNodeIdentifier,
 		stroke: Stroke,
 	},
@@ -50,6 +52,7 @@ pub enum GraphOperationMessage {
 		pivot: DVec2,
 	},
 	Vector {
+		// investigate
 		layer: LayerNodeIdentifier,
 		modification_type: VectorModificationType,
 	},
@@ -57,6 +60,7 @@ pub enum GraphOperationMessage {
 		layer: LayerNodeIdentifier,
 		strokes: Vec<BrushStroke>,
 	},
+	// Seems to place a layer first in the chain. Not sure
 	SetUpstreamToChain {
 		layer: LayerNodeIdentifier,
 	},
@@ -77,12 +81,14 @@ pub enum GraphOperationMessage {
 		insert_index: usize,
 	},
 	NewCustomLayer {
+		// investigate
 		id: NodeId,
 		nodes: Vec<(NodeId, NodeTemplate)>,
 		parent: LayerNodeIdentifier,
 		insert_index: usize,
 	},
 	NewVectorLayer {
+		// investigate
 		id: NodeId,
 		subpaths: Vec<Subpath<PointId>>,
 		parent: LayerNodeIdentifier,

@@ -91,6 +91,7 @@ impl MessageHandler<GraphOperationMessage, GraphOperationMessageData<'_>> for Gr
 					log::error!("Cannot run Vector on ROOT_PARENT");
 					return;
 				}
+				log::debug!("{:?}", modification_type);
 				if let Some(mut modify_inputs) = ModifyInputsContext::new_with_layer(layer, network_interface, responses) {
 					modify_inputs.vector_modify(modification_type);
 				}

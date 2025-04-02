@@ -3307,6 +3307,7 @@ impl NodeNetworkInterface {
 	}
 
 	pub fn vector_modify(&mut self, node_id: &NodeId, modification_type: VectorModificationType) {
+		// investigate
 		let Some(node) = self.network_mut(&[]).unwrap().nodes.get_mut(node_id) else {
 			log::error!("Could not get node in vector_modification");
 			return;
@@ -3800,6 +3801,8 @@ impl NodeNetworkInterface {
 	}
 
 	pub fn set_input(&mut self, input_connector: &InputConnector, new_input: NodeInput, network_path: &[NodeId]) {
+		// investigate
+		debug!("{:?}", new_input);
 		if matches!(input_connector, InputConnector::Export(_)) && matches!(new_input, NodeInput::Network { .. }) {
 			// TODO: Add support for flattening NodeInput::Network exports in flatten_with_fns https://github.com/GraphiteEditor/Graphite/issues/1762
 			log::error!("Cannot connect a network to an export, see https://github.com/GraphiteEditor/Graphite/issues/1762");
@@ -4832,6 +4835,7 @@ impl NodeNetworkInterface {
 	}
 
 	pub fn force_set_upstream_to_chain(&mut self, node_id: &NodeId, network_path: &[NodeId]) {
+		// investigate
 		for upstream_id in self.upstream_flow_back_from_nodes(vec![*node_id], network_path, FlowType::HorizontalFlow).collect::<Vec<_>>().iter() {
 			if !self.is_layer(upstream_id, network_path)
 				&& self.has_primary_output(node_id, network_path)
