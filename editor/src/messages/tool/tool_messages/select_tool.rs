@@ -978,6 +978,12 @@ impl Fsm for SelectToolFsmState {
 
 				state
 			}
+			(SelectToolFsmState::DraggingPivot, SelectToolMessage::DragStop { .. }) => {
+				responses.add(DocumentMessage::EndTransaction);
+
+				let selection = tool_data.nested_selection_behavior;
+				SelectToolFsmState::Ready { selection }
+			}
 			(SelectToolFsmState::DraggingPivot, SelectToolMessage::Abort) => {
 				responses.add(DocumentMessage::AbortTransaction);
 
