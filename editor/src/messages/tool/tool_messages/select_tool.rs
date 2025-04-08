@@ -978,6 +978,12 @@ impl Fsm for SelectToolFsmState {
 
 				state
 			}
+			(SelectToolFsmState::DraggingPivot, SelectToolMessage::DragStop { .. }) => {
+				responses.add(DocumentMessage::EndTransaction);
+
+				let selection = tool_data.nested_selection_behavior;
+				SelectToolFsmState::Ready { selection }
+			}
 			(SelectToolFsmState::DraggingPivot, SelectToolMessage::Abort) => {
 				responses.add(DocumentMessage::AbortTransaction);
 
@@ -1227,6 +1233,7 @@ impl Fsm for SelectToolFsmState {
 			}
 			(SelectToolFsmState::Dragging { axis, using_compass, has_dragged }, SelectToolMessage::PointerOutsideViewport(_)) => {
 				// AutoPanning
+				debug!("Dragging -> PointerOutsideViewport");
 				if let Some(shift) = tool_data.auto_panning.shift_viewport(input, responses) {
 					tool_data.drag_current += shift;
 					tool_data.drag_start += shift;
@@ -1236,6 +1243,7 @@ impl Fsm for SelectToolFsmState {
 			}
 			(SelectToolFsmState::ResizingBounds | SelectToolFsmState::SkewingBounds { .. }, SelectToolMessage::PointerOutsideViewport(_)) => {
 				// AutoPanning
+				debug!("ResizingBounds -> PointerOutsideViewport");
 				if let Some(shift) = tool_data.auto_panning.shift_viewport(input, responses) {
 					if let Some(bounds) = &mut tool_data.bounding_box_manager {
 						bounds.center_of_transformation += shift;
@@ -1247,12 +1255,14 @@ impl Fsm for SelectToolFsmState {
 			}
 			(SelectToolFsmState::DraggingPivot, SelectToolMessage::PointerOutsideViewport(_)) => {
 				// AutoPanning
+				debug!("DraggingPivot -> PointerOutsideViewport");
 				let _ = tool_data.auto_panning.shift_viewport(input, responses);
 
 				self
 			}
 			(SelectToolFsmState::Drawing { .. }, SelectToolMessage::PointerOutsideViewport(_)) => {
 				// AutoPanning
+				debug!("Drawing -> PointerOutsideViewport");
 				if let Some(shift) = tool_data.auto_panning.shift_viewport(input, responses) {
 					tool_data.drag_start += shift;
 				}

@@ -221,6 +221,7 @@ impl NodeRuntime {
 				NodeRuntimeMessage::ExecutionRequest(ExecutionRequest { execution_id, render_config, .. }) => {
 					let transform = render_config.viewport.transform;
 
+					// TODO: Check this
 					let result = self.execute_network(render_config).await;
 					let mut responses = VecDeque::new();
 					// TODO: Only process monitor nodes if the graph has changed, not when only the Footprint changes
@@ -685,6 +686,7 @@ impl NodeGraphExecutor {
 	}
 
 	pub fn poll_node_graph_evaluation(&mut self, document: &mut DocumentMessageHandler, responses: &mut VecDeque<Message>) -> Result<(), String> {
+		// debug!("poll_node_graph_evaluation");
 		let results = self.receiver.try_iter().collect::<Vec<_>>();
 		for response in results {
 			match response {
@@ -818,6 +820,7 @@ impl NodeGraphExecutor {
 				return Err(format!("Invalid node graph output type: {node_graph_output:#?}"));
 			}
 		};
+		// TODO: Check this
 		responses.add(Message::EndBuffer(render_output_metadata));
 		responses.add(DocumentMessage::RenderScrollbars);
 		responses.add(DocumentMessage::RenderRulers);

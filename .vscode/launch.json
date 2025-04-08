@@ -9,40 +9,42 @@
 			"request": "launch",
 			"name": "Graphite debug executable",
 			"cargo": {
-				"args": [
-					"build",
-					"--bin=graphite",
-					"--package=graphite",
-				],
+				"args": ["build", "--bin=graphite", "--package=graphite"],
 				"filter": {
 					"name": "graphite",
-					"kind": "bin",
-				},
+					"kind": "bin"
+				}
 			},
 			"args": [],
 			"cwd": "${workspaceFolder}",
 			"env": {
-				"RUST_LOG": "error",
-			},
+				"RUST_LOG": "error"
+			}
 		},
 		{
 			"type": "lldb",
 			"request": "launch",
 			"name": "Debug unit tests in executable 'graphite'",
 			"cargo": {
-				"args": [
-					"test",
-					"--no-run",
-					"--bin=graphite",
-					"--package=graphite",
-				],
+				"args": ["test", "--no-run", "--bin=graphite", "--package=graphite"],
 				"filter": {
 					"name": "graphite",
-					"kind": "bin",
-				},
+					"kind": "bin"
+				}
 			},
 			"args": [],
-			"cwd": "${workspaceFolder}",
+			"cwd": "${workspaceFolder}"
 		},
-	],
+		{
+			"name": "Launch Browser Chrome",
+			"request": "launch",
+			"type": "chrome",
+			"url": "http://localhost:8080",
+			"webRoot": "${workspaceFolder}/frontend/dist",
+			// Needed to keep the dwarf extension in the browser
+			"userDataDir": false
+			// "preLaunchTask": "trunk: serve",
+			// "postDebugTask": "postdebugKill"
+		}
+	]
 }

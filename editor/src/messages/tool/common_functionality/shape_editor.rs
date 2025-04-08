@@ -147,6 +147,7 @@ impl ClosestSegment {
 		(first_handle, second_handle)
 	}
 
+	/// Add a point where to the segment where the mouse is over, splitting it into two segments
 	pub fn adjusted_insert(&self, responses: &mut VecDeque<Message>) -> PointId {
 		let layer = self.layer;
 		let [first, second] = self.bezier.split(TValue::Parametric(self.t));

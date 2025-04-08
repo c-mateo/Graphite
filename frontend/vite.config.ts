@@ -10,6 +10,8 @@ import rollupPluginLicense, { type Dependency } from "rollup-plugin-license";
 import { sveltePreprocess } from "svelte-preprocess";
 import { defineConfig } from "vite";
 import { DynamicPublicDirectory as viteMultipleAssets } from "vite-multiple-assets";
+import topLevelAwait from "vite-plugin-top-level-await";
+import wasm from "vite-plugin-wasm";
 
 const projectRootDir = path.resolve(__dirname);
 
@@ -45,6 +47,8 @@ export default defineConfig({
 			},
 		}),
 		viteMultipleAssets(["../demo-artwork"]),
+		// wasm(),
+		// topLevelAwait(),
 	],
 	resolve: {
 		alias: [
@@ -60,6 +64,7 @@ export default defineConfig({
 		host: "0.0.0.0",
 	},
 	build: {
+		// sourcemap: true,
 		rollupOptions: {
 			plugins: [
 				rollupPluginLicense({

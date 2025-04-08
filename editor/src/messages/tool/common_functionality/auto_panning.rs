@@ -11,6 +11,7 @@ impl AutoPanning {
 	pub fn start(&mut self, messages: &[Message], responses: &mut VecDeque<Message>) {
 		if !self.subscribed_to_animation_frame {
 			self.subscribed_to_animation_frame = true;
+			// debug!("Suscribing"); // OK
 
 			for message in messages {
 				responses.add(BroadcastMessage::SubscribeEvent {
@@ -24,6 +25,7 @@ impl AutoPanning {
 	pub fn stop(&mut self, messages: &[Message], responses: &mut VecDeque<Message>) {
 		if self.subscribed_to_animation_frame {
 			self.subscribed_to_animation_frame = false;
+			// debug!("Unsuscribing"); // OK
 
 			for message in messages {
 				responses.add(BroadcastMessage::UnsubscribeEvent {
@@ -34,6 +36,7 @@ impl AutoPanning {
 		}
 	}
 
+	// OK
 	pub fn setup_by_mouse_position(&mut self, input: &InputPreprocessorMessageHandler, messages: &[Message], responses: &mut VecDeque<Message>) {
 		let mouse_position = input.mouse.position;
 		let viewport_size = input.viewport_bounds.size();
@@ -51,6 +54,7 @@ impl AutoPanning {
 	/// The shift is proportional to the distance between edge and mouse, and to the duration of the frame.
 	/// It is also guaranteed to be integral.
 	pub fn shift_viewport(&self, input: &InputPreprocessorMessageHandler, responses: &mut VecDeque<Message>) -> Option<DVec2> {
+		debug!("shift_viewport");
 		if !self.subscribed_to_animation_frame {
 			return None;
 		}

@@ -1358,10 +1358,16 @@ impl Fsm for PenToolFsmState {
 							}
 						}
 
-						// We have the point. Close the path and draw the enclosed area
+						// We have the point. Join the 2 vertices and check if the path is closed
 						if end.is_some() {
 							let id: SegmentId = SegmentId::generate();
 							vector_data.push(id, start, end.unwrap(), BezierHandles::Cubic { handle_start, handle_end }, StrokeId::ZERO);
+
+							let grouped_segments = vector_data.auto_join_paths();
+
+							for group in grouped_segments.iter() {
+								debug!("Group: {:?}", group);
+							}
 
 							let beziers: Vec<Bezier> = vector_data.segment_bezier_iter().map(|(_, bezier, _, _)| bezier).collect();
 							let subpath = [Subpath::from_beziers(&beziers[..], false)];

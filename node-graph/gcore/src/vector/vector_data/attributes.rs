@@ -3,7 +3,8 @@ use bezier_rs::BezierHandles;
 use core::iter::zip;
 use dyn_any::DynAny;
 use glam::{DAffine2, DVec2};
-use std::collections::HashMap;
+use std::backtrace::Backtrace;
+use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
 
 /// A simple macro for creating strongly typed ids (to avoid confusion when passing around ids).
@@ -544,6 +545,83 @@ impl RegionDomain {
 	}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SegmentReference {
+	pub id: SegmentId,
+	pub start: usize,
+	pub end: usize,
+	pub reverse: bool,
+}
+
+impl SegmentReference {
+	pub fn new(id: SegmentId, start: usize, end: usize, reverse: bool) -> Self {
+		Self { id, start, end, reverse }
+	}
+
+	pub fn reversed(&self) -> Self {
+		Self {
+			id: self.id,
+			start: self.end,
+			end: self.start,
+			reverse: !self.reverse,
+		}
+		.apply_reversion()
+	}
+
+	pub fn apply_reversion(&self) -> Self {
+		if self.reverse {
+			Self {
+				id: self.id,
+				start: self.end,
+				end: self.start,
+				reverse: false,
+			}
+		} else {
+			self.clone()
+		}
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Subpath_ {
+	pub segments: Vec<SegmentReference>,
+	pub closed: bool,
+}
+
+impl Subpath_ {
+	pub fn new(segments: Vec<SegmentReference>, closed: bool) -> Self {
+		Self { segments, closed }
+	}
+
+	pub fn first_segment(&self) -> Option<&SegmentReference> {
+		self.segments.first()
+	}
+
+	pub fn last_segment(&self) -> Option<&SegmentReference> {
+		self.segments.last()
+	}
+
+	pub fn append_path(&mut self, other: Self) {
+		self.segments.extend(other.segments);
+		self.closed = self.closed || other.closed;
+	}
+
+	pub fn push(&mut self, segment: SegmentReference) {
+		self.segments.push(segment);
+	}
+
+	pub fn insert(&mut self, index: usize, segment: SegmentReference) {
+		self.segments.insert(index, segment);
+	}
+
+	pub fn from_segment(segment: SegmentReference) -> Self {
+		Self {
+			segments: vec![segment],
+			closed: false,
+		}
+	}
+}
+
 impl VectorData {
 	/// Construct a [`bezier_rs::Bezier`] curve spanning from the resolved position of the start and end points with the specified handles.
 	fn segment_to_bezier_with_index(&self, start: usize, end: usize, handles: bezier_rs::BezierHandles) -> bezier_rs::Bezier {
@@ -581,6 +659,89 @@ impl VectorData {
 			.zip(self.segment_domain.start_point())
 			.zip(self.segment_domain.end_point())
 			.map(to_bezier)
+	}
+
+	// type Path = Vec<SegmentReference>;
+	pub fn auto_join_paths(&self) -> Vec<Subpath_> {
+		// Paso 1: Obtener todos los segmentos
+		let segments = self.segment_domain.iter().map(|(id, start, end, _)| SegmentReference::new(id, start, end, false));
+
+		let mut paths: Vec<Subpath_> = Vec::new();
+		let mut current_path: Option<&mut Subpath_> = None;
+		let mut previous_end: Option<usize> = None;
+
+		for seg_ref in segments {
+			let start = seg_ref.start;
+			let end = seg_ref.end;
+
+			if let Some(prev) = previous_end {
+				if start == prev {
+					if let Some(path) = current_path.as_mut() {
+						path.push(seg_ref);
+					}
+				} else {
+					paths.push(Subpath_::from_segment(seg_ref));
+					// ⚠️ ¡Importante! Solo actualizás `current_path` DESPUÉS de hacer push.
+					current_path = paths.last_mut();
+				}
+			} else {
+				paths.push(Subpath_::from_segment(seg_ref));
+				current_path = paths.last_mut();
+			}
+
+			previous_end = Some(end);
+		}
+
+		// Paso 3: Juntar caminos como en join_paths()
+		let mut new_paths = Vec::new();
+
+		while paths.len() != new_paths.len() {
+			new_paths = Vec::new();
+			let mut current: Option<Subpath_> = None;
+
+			for path in paths.into_iter() {
+				if let Some(mut prev) = current.take() {
+					let prev_last = prev.last_segment().unwrap();
+					let prev_first = prev.first_segment().unwrap();
+					let cur_last = path.last_segment().unwrap();
+					let cur_first = path.first_segment().unwrap();
+
+					if prev_last.end == cur_first.start {
+						for segment in path.segments {
+							prev.push(segment.apply_reversion());
+						}
+						current = Some(prev);
+					} else if prev_first.start == cur_last.end {
+						for segment in path.segments.into_iter().rev() {
+							prev.insert(0, segment.apply_reversion());
+						}
+						current = Some(prev);
+					} else if prev_last.end == cur_last.end {
+						for segment in path.segments.into_iter().rev() {
+							prev.push(segment.reversed());
+						}
+						current = Some(prev);
+					} else if prev_first.start == cur_first.start {
+						for segment in path.segments {
+							prev.insert(0, segment.reversed());
+						}
+						current = Some(prev);
+					} else {
+						new_paths.push(prev);
+						current = Some(path);
+					}
+				} else {
+					current = Some(path);
+				}
+			}
+
+			if let Some(remaining) = current {
+				new_paths.push(remaining);
+			}
+			paths = new_paths.clone();
+		}
+
+		paths
 	}
 
 	/// Construct a [`bezier_rs::Bezier`] curve from an iterator of segments with (handles, start point, end point). Returns None if any ids are invalid or if the segments are not continuous.
@@ -625,7 +786,8 @@ impl VectorData {
 
 	/// Construct a [`bezier_rs::Bezier`] curve for each region, skipping invalid regions.
 	pub fn region_bezier_paths(&self) -> impl Iterator<Item = (RegionId, bezier_rs::Subpath<PointId>)> + '_ {
-		self.region_domain
+		let result = self
+			.region_domain
 			.id
 			.iter()
 			.zip(&self.region_domain.segment_range)
@@ -641,7 +803,9 @@ impl VectorData {
 					.map(|((&handles, &start), &end)| (handles, start, end));
 
 				self.subpath_from_segments(segments_iter).map(|subpath| (id, subpath))
-			})
+			});
+		// debug!("region_bezier_paths {:?}", result.clone());
+		return result;
 	}
 
 	/// Construct a [`bezier_rs::Bezier`] curve for stroke.

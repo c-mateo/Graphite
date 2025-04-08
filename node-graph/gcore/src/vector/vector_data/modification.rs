@@ -324,6 +324,7 @@ pub enum VectorModificationType {
 	SetStartPoint { segment: SegmentId, id: PointId },
 	SetEndPoint { segment: SegmentId, id: PointId },
 
+	// Moves a single point
 	ApplyPointDelta { point: PointId, delta: DVec2 },
 	ApplyPrimaryDelta { segment: SegmentId, delta: DVec2 },
 	ApplyEndDelta { segment: SegmentId, delta: DVec2 },
@@ -332,6 +333,7 @@ pub enum VectorModificationType {
 impl VectorModification {
 	/// Apply this modification to the specified [`VectorData`].
 	pub fn apply(&self, vector_data: &mut VectorData) {
+		// Look at this
 		self.points.apply(&mut vector_data.point_domain, &mut vector_data.segment_domain);
 		self.segments.apply(&mut vector_data.segment_domain, &vector_data.point_domain);
 		self.regions.apply(&mut vector_data.region_domain);

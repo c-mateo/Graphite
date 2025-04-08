@@ -120,6 +120,7 @@ impl VectorData {
 
 	/// Push a subpath to the vector data
 	pub fn append_subpath(&mut self, subpath: impl Borrow<bezier_rs::Subpath<PointId>>, preserve_id: bool) {
+		// Look at this
 		let subpath: &bezier_rs::Subpath<PointId> = subpath.borrow();
 		let stroke_id = StrokeId::ZERO;
 		let mut point_id = self.point_domain.next_id();
